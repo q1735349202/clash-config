@@ -1,0 +1,161 @@
+# ==========================================================
+# Clash 配置 —— 三节点（香港 浪浪云 → 日本 Cloady → 美国 Railway）
+# 2026-11-11 生成（新增香港节点）
+# ==========================================================
+
+# —— 本机代理端口 ——
+mixed-port: 7890
+
+# —— 是否允许局域网其他设备连你这台手机 ——
+allow-lan: false
+
+bind-address: '*'
+
+# —— 运行模式：rule = 按规则分流 ——
+mode: rule
+
+# —— 日志级别 ——
+log-level: info
+
+# —— 关闭 IPv6 ——
+ipv6: false
+
+# ==========================================================
+# DNS
+# ==========================================================
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: redir-host
+
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  fallback:
+    - 8.8.8.8
+    - 1.1.1.1
+
+  fallback-filter:
+    geoip: false
+
+
+# ==========================================================
+# 节点列表
+# ==========================================================
+proxies:
+  # ========== 节点 1：香港 浪浪云（主力，延迟最低 15ms）==========
+  - name: "香港 浪浪云"
+    type: vless
+    server: 206.187.214.199
+    port: 443
+    uuid: 1c0fe6a6-5549-4d7f-b62b-2a20f33dad72
+    network: ws
+    tls: true
+    udp: false
+    servername: 206.187.214.199
+    # 裸 IP 用自签证书，必须跳过校验
+    skip-cert-verify: true
+    ws-opts:
+      path: "/dc85d8b8a51e2c5a1949f52ce0b5ead9"
+      headers:
+        Host: 206.187.214.199
+
+  # ========== 节点 2：日本 Cloady（东京）==========
+  - name: "日本 东京"
+    type: vless
+    server: xray-vless-o2umjxo9-q1735349202.cloady.io
+    port: 443
+    uuid: c8f34ea3-6f25-a398-1d92-5ddf4d3741c5
+    network: ws
+    tls: true
+    udp: false
+    servername: xray-vless-o2umjxo9-q1735349202.cloady.io
+    skip-cert-verify: true
+    ws-opts:
+      path: "/1fc4bb3f30e20310"
+      headers:
+        Host: xray-vless-o2umjxo9-q1735349202.cloady.io
+
+  # ========== 节点 3：美国 Railway（兜底）==========
+  - name: "美国 Railway"
+    type: vless
+    server: xray-production-3695.up.railway.app
+    port: 443
+    uuid: ff95c533-41e0-4b5d-997e-47916b4d635d
+    network: ws
+    tls: true
+    udp: false
+    servername: xray-production-3695.up.railway.app
+    skip-cert-verify: true
+    ws-opts:
+      path: "/ray"
+      headers:
+        Host: xray-production-3695.up.railway.app
+
+
+# ==========================================================
+# 节点分组
+# ==========================================================
+proxy-groups:
+  # 主选择框：默认香港（延迟最低）
+  - name: "节点选择"
+    type: select
+    proxies:
+      - "香港 浪浪云"
+      - "日本 东京"
+      - "美国 Railway"
+      - DIRECT
+
+  # 自动测速选最快的
+  - name: "自动选最快"
+    type: url-test
+    url: "http://www.gstatic.com/generate_204"
+    interval: 300
+    tolerance: 50
+    proxies:
+      - "香港 浪浪云"
+      - "日本 东京"
+      - "美国 Railway"
+
+
+# ==========================================================
+# 分流规则
+# ==========================================================
+rules:
+  # 抖音 → 直连（海外 IP 会被风控，绝对不能走节点）
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,iesdouyin.com,DIRECT
+  - DOMAIN-SUFFIX,amemv.com,DIRECT
+  - DOMAIN-SUFFIX,douyinpic.com,DIRECT
+  - DOMAIN-SUFFIX,douyinvod.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.com,DIRECT
+
+  # 微信、QQ → 直连
+  - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+
+  # 国内常用服务 → 直连
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,alipay.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+
+  # 节点自己的域名必须直连（否则会绕回来死循环）
+  - DOMAIN-SUFFIX,cloady.io,DIRECT
+  - DOMAIN-SUFFIX,railway.app,DIRECT
+  - IP-CIDR,206.187.214.199/32,DIRECT,no-resolve
+
+  # 国内 IP → 直连
+  - GEOIP,CN,DIRECT,no-resolve
+
+  # 其余全部走节点
+  - MATCH,节点选择
