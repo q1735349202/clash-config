@@ -1,6 +1,6 @@
 # ==========================================================
-# Clash 配置 —— 澳洲 悉尼 AWS Lightsail
-# 2026-11-19 v2：加入 mux 多路复用（解决小请求慢）
+# Clash 配置 —— 单节点（澳洲 悉尼 AWS Lightsail）
+# 2026-11-19 生成（仅保留悉尼节点）
 # ==========================================================
 
 # —— 本机代理端口 ——
@@ -48,32 +48,8 @@ dns:
 # 节点列表
 # ==========================================================
 proxies:
-  # ========== 【推荐】悉尼 + mux（小请求快 2 倍）==========
-  - name: "悉尼 mux"
-    type: vless
-    server: 3.104.221.230
-    port: 6443
-    uuid: 96f3c7e4-ca8a-47d5-8983-b80278ca4ca8
-    network: ws
-    tls: true
-    udp: true
-    servername: 3.104.221.230
-    skip-cert-verify: true
-    client-fingerprint: chrome
-    ws-opts:
-      path: "/02afc9c8b48c0ff762532c41777e8a18"
-      headers:
-        Host: 3.104.221.230
-    # —— 多路复用：所有请求复用同一条隧道，省掉重复握手 ——
-    smux:
-      enabled: true
-      protocol: smux
-      max-connections: 8
-      min-streams: 8
-      padding: false
-
-  # ========== 悉尼 原版（无 mux，测速下载略高）==========
-  - name: "悉尼 原版"
+  # ========== 澳洲 悉尼（AWS Lightsail）==========
+  - name: "悉尼 Lightsail"
     type: vless
     server: 3.104.221.230
     port: 443
@@ -82,6 +58,7 @@ proxies:
     tls: true
     udp: true
     servername: 3.104.221.230
+    # 裸 IP 用自签证书，必须跳过校验
     skip-cert-verify: true
     client-fingerprint: chrome
     ws-opts:
@@ -97,8 +74,7 @@ proxy-groups:
   - name: "节点选择"
     type: select
     proxies:
-      - "悉尼 mux"
-      - "悉尼 原版"
+      - "悉尼 Lightsail"
       - DIRECT
 
   - name: "自动选最快"
@@ -107,8 +83,7 @@ proxy-groups:
     interval: 300
     tolerance: 50
     proxies:
-      - "悉尼 mux"
-      - "悉尼 原版"
+      - "悉尼 Lightsail"
 
 
 # ==========================================================
